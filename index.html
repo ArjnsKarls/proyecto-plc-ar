@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PLC Siemens S7-1200 - AR</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      model-viewer {
+        width: 100%;
+        height: 80vh;
+        background-color: #fff;
+      }
+      .description {
+        padding: 20px;
+        max-width: 800px;
+      }
+      .buttons {
+        margin-top: 10px;
+      }
+      .buttons a {
+        margin: 0 10px;
+        padding: 10px 20px;
+        background: #007ACC;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <model-viewer
+      src="siemens_plc.glb"
+      ar
+      ar-modes="scene-viewer webxr quick-look"
+      camera-controls
+      auto-rotate
+      alt="PLC Siemens S7-1200"
+      exposure="1"
+    >
+      <button slot="hotspot-1" data-position="0 0.05 0.05" data-normal="0 1 0">
+        CPU
+      </button>
+      <button slot="hotspot-2" data-position="0.05 0.03 0.05" data-normal="0 1 0">
+        Entradas digitales
+      </button>
+      <button slot="hotspot-3" data-position="-0.05 0.03 0.05" data-normal="0 1 0">
+        Salidas digitales
+      </button>
+    </model-viewer>
+
+    <div class="description">
+      <h2>PLC Siemens S7-1200</h2>
+      <p>
+        Este controlador lógico programable es parte de la serie S7-1200 de Siemens.
+        Es ampliamente utilizado en automatización industrial debido a su flexibilidad,
+        rendimiento y facilidad de integración con sistemas HMI y SCADA.
+      </p>
+      <div class="buttons">
+        <a href="https://cache.industry.siemens.com/dl/files/382/109748382/att_1037662/v1/s71200_system_manual_es.pdf" target="_blank">Ficha Técnica</a>
+        <a href="https://www.youtube.com/watch?v=JdAhI4RmqTU" target="_blank">Ver Video</a>
+      </div>
+    </div>
+  </body>
+</html>
