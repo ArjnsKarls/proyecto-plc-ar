@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>PLC Siemens S7-1200 - AR</title>
+    <title>Canon Printer AR</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
       body {
@@ -39,35 +39,34 @@
   </head>
   <body>
     <model-viewer
-      src="https://arjnskarls.github.io/proyecto-plc-ar/siemens_plc.glb"
+      src="canon_printer.glb"
       ar
       ar-modes="scene-viewer webxr quick-look"
       camera-controls
       auto-rotate
-      alt="PLC Siemens S7-1200"
+      alt="Impresora Canon 3D"
       exposure="1"
     >
-      <button slot="hotspot-1" data-position="0 0.05 0.05" data-normal="0 1 0">
-        CPU
+      <button slot="hotspot-1" data-position="0 0.2 0.2" data-normal="0 1 0">
+        Bandeja
       </button>
-      <button slot="hotspot-2" data-position="0.05 0.03 0.05" data-normal="0 1 0">
-        Entradas digitales
+      <button slot="hotspot-2" data-position="0 0.25 -0.1" data-normal="0 1 0">
+        Panel de control
       </button>
-      <button slot="hotspot-3" data-position="-0.05 0.03 0.05" data-normal="0 1 0">
-        Salidas digitales
+      <button slot="hotspot-3" data-position="0 -0.1 -0.3" data-normal="0 1 0">
+        Bandeja posterior
       </button>
     </model-viewer>
 
     <div class="description">
-      <h2>PLC Siemens S7-1200</h2>
+      <h2>Impresora Canon - Modelo Interactivo en AR</h2>
       <p>
-        Este controlador lógico programable es parte de la serie S7-1200 de Siemens.
-        Es ampliamente utilizado en automatización industrial debido a su flexibilidad,
-        rendimiento y facilidad de integración con sistemas HMI y SCADA. FIN
+        Este modelo representa una impresora Canon típica, ideal para demostraciones educativas en realidad aumentada.
+        Explora sus componentes principales como la bandeja frontal, el panel de control y la bandeja posterior.
+        Utiliza este recurso para identificar partes de equipos de oficina y mejorar el aprendizaje técnico.
       </p>
       <div class="buttons">
-        <a href="https://cache.industry.siemens.com/dl/files/382/109748382/att_1037662/v1/s71200_system_manual_es.pdf" target="_blank">Ficha Técnica</a>
-        <a href="https://www.youtube.com/watch?v=JdAhI4RmqTU" target="_blank">Ver Video</a>
+        <a href="https://www.canon.es/printers/" target="_blank">Ficha Técnica</a>
       </div>
     </div>
   </body>
