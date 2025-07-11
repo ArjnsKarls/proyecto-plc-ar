@@ -1,73 +1,99 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Canon Printer AR</title>
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: sans-serif;
-        background-color: #f4f4f4;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-      model-viewer {
-        width: 100%;
-        height: 80vh;
-        background-color: #fff;
-      }
-      .description {
-        padding: 20px;
-        max-width: 800px;
-      }
-      .buttons {
-        margin-top: 10px;
-      }
-      .buttons a {
-        margin: 0 10px;
-        padding: 10px 20px;
-        background: #007ACC;
-        color: white;
-        text-decoration: none;
-        border-radius: 5px;
-      }
-    </style>
-  </head>
-  <body>
-    <model-viewer
-      src="the_canon_printer.glb"
-      ar
-      ar-modes="scene-viewer webxr quick-look"
-      camera-controls
-      auto-rotate
-      alt="Impresora Canon 3D"
-      exposure="1"
-    >
-      <button slot="hotspot-1" data-position="0 0.2 0.2" data-normal="0 1 0">
-        Bandeja
-      </button>
-      <button slot="hotspot-2" data-position="0 0.25 -0.1" data-normal="0 1 0">
-        Panel de control
-      </button>
-      <button slot="hotspot-3" data-position="0 -0.1 -0.3" data-normal="0 1 0">
-        Bandeja posterior
-      </button>
-    </model-viewer>
+<head>
+  <meta charset="UTF-8" />
+  <title>Canon Printer AR Interactivo</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    model-viewer {
+      width: 100%;
+      height: 80vh;
+      background-color: #fff;
+    }
+    .controls {
+      margin-top: 10px;
+    }
+    .controls button {
+      margin: 0 5px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007ACC;
+      color: white;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background-color: #005f99;
+    }
+    .description {
+      padding: 20px;
+      max-width: 800px;
+    }
+    .buttons a {
+      margin: 0 10px;
+      padding: 10px 20px;
+      background: #007ACC;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
 
-    <div class="description">
-      <h2>Impresora Canon - Modelo Interactivo en AR</h2>
-      <p>
-        Este modelo representa una impresora Canon típica, ideal para demostraciones educativas en realidad aumentada.
-        Explora sus componentes principales como la bandeja frontal, el panel de control y la bandeja posterior.
-        Utiliza este recurso para identificar partes de equipos de oficina y mejorar el aprendizaje técnico.
-      </p>
-      <div class="buttons">
-        <a href="https://www.canon.es/printers/" target="_blank">Ficha Técnica</a>
-      </div>
+  <div class="controls">
+    <button onclick="focusOn('bandeja')">Bandeja</button>
+    <button onclick="focusOn('panel')">Panel de control</button>
+    <button onclick="focusOn('posterior')">Bandeja posterior</button>
+  </div>
+
+  <model-viewer id="printerModel"
+    src="the_canon_printer.glb"
+    ar
+    ar-modes="scene-viewer webxr quick-look"
+    camera-controls
+    auto-rotate
+    alt="Impresora Canon 3D"
+    exposure="1"
+  >
+  </model-viewer>
+
+  <div class="description">
+    <h2>Impresora Canon - Modelo AR Interactivo</h2>
+    <p>
+      Este modelo representa una impresora Canon interactiva en 3D y realidad aumentada.
+      Utiliza los botones para girar la cámara hacia componentes específicos como la bandeja, el panel de control o la bandeja posterior.
+    </p>
+    <div class="buttons">
+      <a href="https://www.canon.es/printers/" target="_blank">Ficha Técnica</a>
     </div>
-  </body>
+  </div>
+
+  <script>
+    const model = document.getElementById('printerModel');
+
+    function focusOn(part) {
+      switch (part) {
+        case 'bandeja':
+          model.cameraOrbit = '0deg 75deg 1.2m';
+          break;
+        case 'panel':
+          model.cameraOrbit = '-30deg 60deg 1.1m';
+          break;
+        case 'posterior':
+          model.cameraOrbit = '180deg 70deg 1.2m';
+          break;
+      }
+    }
+  </script>
+</body>
 </html>
