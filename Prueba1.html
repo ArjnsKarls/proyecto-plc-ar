@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RA con Impresora Canon</title>
+    <style>
+        body { margin: 0; }
+    </style>
+</head>
+<body>
+    <h1>Impresora Canon en RA</h1>
+    <script src="https://webxr.io/libraries/three/build/three.min.js"></script>
+    <script src="https://webxr.io/libraries/webxr-polyfill/build/webxr-polyfill.min.js"></script>
+    <script>
+        // Variables
+        let scene, camera, renderer;
+        let model;
+
+        // Carga el modelo
+        function loadModel(glbFile) {
+            return new Promise((resolve, reject) => {
+                const loader = new THREE.GLTFLoader();
+                loader.load(glbFile, function (gltf) {
+                    scene.add(gltf.scene);
+                    model = gltf.scene;
+                    resolve();
+                }, undefined, reject);
+            });
+        }
+
+        // Inicialización
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Carga el modelo
+            loadModel("the_canon_printer.glb").then(() => {
+                // Posiciona el modelo
+                model.position.y = - 0.5; // Ajusta la altura
+            });
+
+            // Evento de redimensionamiento
+            window.addEventListener('resize', onResize);
+        }
+
+        // Redimensionamiento
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Animación
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Inicio
+        init();
+        animate();
+    </script>
+</body>
+</html>
