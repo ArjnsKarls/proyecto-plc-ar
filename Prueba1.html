@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Experiencia AR con impresora Canon usando WebXR" />
-  <title>AR - Impresora Canon (WebXR Mejorado)</title>
+  <title>AR - Impresora Canon con Image Tracking</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -12,101 +11,20 @@
       margin: 0;
       height: 100vh;
       overflow: hidden;
-      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #000;
+      font-family: system-ui, sans-serif;
     }
 
-    #ui-container {
+    #ui {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 20px;
+      left: 20px;
       z-index: 100;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      pointer-events: none;
-    }
-
-    .ui-card {
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 16px;
       color: white;
-      max-width: 400px;
-      pointer-events: auto;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    #status-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .status-indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #ff4757;
-      animation: pulse 2s infinite;
-    }
-
-    .status-indicator.ready { background: #2ed573; }
-    .status-indicator.loading { background: #ffa502; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    #controls-card {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .button-group {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      flex: 1;
-      min-width: 120px;
-    }
-
-    button:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-    }
-
-    button:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      background: #666;
-    }
-
-    button.secondary {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 10px;
+      max-width: 300px;
     }
 
     #instructions {
@@ -118,195 +36,70 @@
       color: white;
       padding: 12px 24px;
       border-radius: 24px;
-      font-size: 14px;
       text-align: center;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      max-width: 90%;
-      z-index: 50;
     }
 
-    #loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.9);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-      z-index: 1000;
-      color: white;
-    }
-
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 3px solid rgba(255, 255, 255, 0.1);
-      border-top-color: #667eea;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .hidden { display: none !important; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <!-- Overlay de carga -->
-  <div id="loading-overlay">
-    <div class="spinner"></div>
-    <div id="loading-text">Cargando experiencia AR...</div>
+  <div id="ui">
+    <h3>Impresora Canon AR</h3>
+    <p id="status">Cargando...</p>
+    <p id="device-info"></p>
   </div>
 
-  <!-- Contenedor UI -->
-  <div id="ui-container">
-    <!-- Tarjeta de estado -->
-    <div id="status-card" class="ui-card">
-      <div class="status-indicator" id="status-indicator"></div>
-      <div>
-        <div id="status-text">Esperando inicio...</div>
-        <div id="status-detail" style="font-size: 12px; opacity: 0.8; margin-top: 4px;"></div>
-      </div>
-    </div>
-
-    <!-- Tarjeta de controles -->
-    <div id="controls-card" class="ui-card hidden">
-      <div class="button-group">
-        <button id="start-ar" class="primary">Iniciar AR</button>
-        <button id="reset-scene" class="secondary" disabled>Reiniciar</button>
-      </div>
-      <div class="button-group">
-        <button id="place-printer" disabled>Colocar Impresora</button>
-        <button id="remove-printer" class="secondary" disabled>Quitar Impresora</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Instrucciones -->
   <div id="instructions" class="hidden">
-    Mueve tu dispositivo para encontrar una superficie. Toca para colocar la impresora.
+    Apunta tu cámara al código QR impreso para ver la impresora
   </div>
 
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { ARButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js';
     import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-    import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
-
-    // Elementos DOM
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const loadingText = document.getElementById('loading-text');
-    const statusIndicator = document.getElementById('status-indicator');
-    const statusText = document.getElementById('status-text');
-    const statusDetail = document.getElementById('status-detail');
-    const controlsCard = document.getElementById('controls-card');
-    const instructions = document.getElementById('instructions');
-    const startArBtn = document.getElementById('start-ar');
-    const resetBtn = document.getElementById('reset-scene');
-    const placeBtn = document.getElementById('place-printer');
-    const removeBtn = document.getElementById('remove-printer');
 
     // Variables globales
     let scene, camera, renderer;
-    let hitTestSource = null;
-    let hitTestSourceRequested = false;
-    let currentSession = null;
+    let imageTrackingSource = null;
     let printer = null;
-    let printerPlaced = false;
+    let currentSession = null;
 
-    // Reticle mejorado
-    const reticle = new THREE.Group();
-    const reticleRing = new THREE.Mesh(
-      new THREE.RingGeometry(0.07, 0.09, 32).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ 
-        color: 0x00ff88,
-        transparent: true,
-        opacity: 0.8
-      })
-    );
-    const reticleDot = new THREE.Mesh(
-      new THREE.CircleGeometry(0.02, 16).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ 
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.9
-      })
-    );
-    
-    reticle.add(reticleRing);
-    reticle.add(reticleDot);
-    reticle.visible = false;
-    reticle.matrixAutoUpdate = false;
+    // Elementos DOM
+    const statusEl = document.getElementById('status');
+    const deviceInfoEl = document.getElementById('device-info');
+    const instructionsEl = document.getElementById('instructions');
 
-    // Sistema de estado
-    const AppState = {
-      INITIALIZING: 'initializing',
-      READY: 'ready',
-      LOADING_MODEL: 'loading_model',
-      MODEL_LOADED: 'model_loaded',
-      AR_SESSION_ACTIVE: 'ar_session_active',
-      ERROR: 'error'
+    // Imagen del QR que será reconocida
+    const qrMarkerImage = new Image();
+    qrMarkerImage.src = './qr-marker.png'; // Tu imagen QR específica
+
+    // Configuración del marcador
+    const markerConfig = {
+      image: qrMarkerImage,
+      widthInMeters: 0.1, // Tamaño real del QR impreso (10cm)
+      physicalWidth: 0.1
     };
-
-    let currentState = AppState.INITIALIZING;
-
-    function updateStatus(state, detail = '') {
-      currentState = state;
-      
-      switch(state) {
-        case AppState.INITIALIZING:
-          statusIndicator.className = 'status-indicator loading';
-          statusText.textContent = 'Inicializando...';
-          break;
-        case AppState.READY:
-          statusIndicator.className = 'status-indicator ready';
-          statusText.textContent = 'Listo para AR';
-          controlsCard.classList.remove('hidden');
-          break;
-        case AppState.LOADING_MODEL:
-          statusIndicator.className = 'status-indicator loading';
-          statusText.textContent = 'Cargando modelo 3D...';
-          loadingText.textContent = 'Cargando modelo de impresora...';
-          break;
-        case AppState.MODEL_LOADED:
-          statusIndicator.className = 'status-indicator ready';
-          statusText.textContent = 'Modelo cargado';
-          loadingOverlay.classList.add('hidden');
-          break;
-        case AppState.AR_SESSION_ACTIVE:
-          statusIndicator.className = 'status-indicator ready';
-          statusText.textContent = 'Sesión AR activa';
-          instructions.classList.remove('hidden');
-          break;
-        case AppState.ERROR:
-          statusIndicator.className = 'status-indicator';
-          statusText.textContent = 'Error';
-          break;
-      }
-      
-      statusDetail.textContent = detail;
-    }
 
     // Inicialización
     async function init() {
-      updateStatus(AppState.INITIALIZING);
-      
       try {
-        // Verificar soporte WebXR
+        // Verificar soporte de WebXR
         if (!navigator.xr) {
           throw new Error('WebXR no está soportado en este navegador');
         }
 
+        // Verificar soporte de Image Tracking
+        const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+        if (!isSupported) {
+          throw new Error('AR no está soportado en este dispositivo');
+        }
+
+        updateStatus('Verificando Image Tracking...');
+
         // Crear escena
         scene = new THREE.Scene();
-        scene.fog = new THREE.Fog(0x000000, 0.1, 20);
 
         // Crear cámara
         camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
@@ -314,13 +107,11 @@
         // Crear renderer
         renderer = new THREE.WebGLRenderer({ 
           antialias: true, 
-          alpha: true,
-          powerPreference: 'high-performance'
+          alpha: true 
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.xr.enabled = true;
-        renderer.outputEncoding = THREE.sRGBEncoding;
         document.body.appendChild(renderer.domElement);
 
         // Iluminación
@@ -331,16 +122,10 @@
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
-        scene.add(reticle);
-
-        // Cargar modelo con DRACO para compresión
-        updateStatus(AppState.LOADING_MODEL);
+        // Cargar modelo de impresora
+        updateStatus('Cargando modelo 3D...');
         
         const loader = new GLTFLoader();
-        const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
-        loader.setDRACOLoader(dracoLoader);
-
         loader.load(
           './the_canon_printer.glb',
           (gltf) => {
@@ -351,207 +136,178 @@
               if (child.isMesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;
-                child.material.metalness = 0.1;
-                child.material.roughness = 0.8;
               }
             });
 
-            // Ajustar escala y posición
+            // Ajustar escala
             printer.scale.set(0.3, 0.3, 0.3);
-            printer.position.y = 0.1; // Levantar un poco del suelo
             printer.visible = false;
             
             scene.add(printer);
-            updateStatus(AppState.MODEL_LOADED, 'Modelo Canon listo');
+            updateStatus('Modelo cargado. Listo para AR.');
             
-            // Habilitar botón de inicio AR
-            startArBtn.disabled = false;
+            // Configurar botón AR
+            setupARButton();
           },
-          (progress) => {
-            const percent = (progress.loaded / progress.total * 100).toFixed(1);
-            loadingText.textContent = `Cargando modelo: ${percent}%`;
-          },
+          undefined,
           (error) => {
             console.error('Error cargando modelo:', error);
-            updateStatus(AppState.ERROR, 'Error cargando el modelo 3D');
-            loadingText.textContent = 'Error al cargar el modelo. Usando cubo de prueba.';
+            updateStatus('Error cargando el modelo. Usando cubo de prueba.');
             
-            // Crear cubo de prueba como fallback
+            // Fallback: cubo simple
             printer = new THREE.Mesh(
               new THREE.BoxGeometry(0.3, 0.3, 0.3),
               new THREE.MeshStandardMaterial({ color: 0x3498db })
             );
             printer.visible = false;
             scene.add(printer);
-            updateStatus(AppState.MODEL_LOADED, 'Usando modelo de prueba');
-            startArBtn.disabled = false;
+            updateStatus('Usando modelo de prueba. Listo para AR.');
+            setupARButton();
           }
         );
 
-        // Configurar botón AR
-        const arButton = ARButton.createButton(renderer, {
-          requiredFeatures: ['hit-test'],
-          optionalFeatures: ['dom-overlay'],
-          domOverlay: { root: document.body }
-        });
-        
-        arButton.style.position = 'fixed';
-        arButton.style.bottom = '20px';
-        arButton.style.right = '20px';
-        arButton.style.zIndex = '100';
-        document.body.appendChild(arButton);
-
-        // Event listeners
-        startArBtn.addEventListener('click', () => {
-          arButton.click();
-        });
-
-        resetBtn.addEventListener('click', resetScene);
-        placeBtn.addEventListener('click', placePrinter);
-        removeBtn.addEventListener('click', removePrinter);
-
         // Eventos de ventana
         window.addEventListener('resize', onResize);
-        window.addEventListener('orientationchange', onResize);
-
-        // Iniciar loop de renderizado
-        renderer.setAnimationLoop(render);
-
-        updateStatus(AppState.READY, 'Esperando inicio de sesión AR');
 
       } catch (error) {
         console.error('Error en inicialización:', error);
-        updateStatus(AppState.ERROR, error.message);
-        loadingText.textContent = `Error: ${error.message}`;
+        updateStatus(`Error: ${error.message}`);
       }
     }
 
-    function resetScene() {
-      if (printer) {
-        printer.visible = false;
-        printerPlaced = false;
+    function setupARButton() {
+      const arButton = ARButton.createButton(renderer, {
+        requiredFeatures: ['image-tracking'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.body }
+      });
+      
+      arButton.textContent = 'Iniciar AR con QR';
+      arButton.style.position = 'fixed';
+      arButton.style.bottom = '20px';
+      arButton.style.right = '20px';
+      arButton.style.zIndex = '100';
+      document.body.appendChild(arButton);
+    }
+
+    function updateStatus(message) {
+      statusEl.textContent = message;
+      
+      // Detectar dispositivo
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isAndroid = /Android/.test(navigator.userAgent);
+      
+      if (isIOS) {
+        deviceInfoEl.textContent = 'iOS: Soporte nativo completo ✅';
+      } else if (isAndroid) {
+        deviceInfoEl.textContent = 'Android: Requiere flag en Chrome';
+        deviceInfoEl.innerHTML += '<br><small>chrome://flags/#webxr-incubations</small>';
       }
-      reticle.visible = false;
-      placeBtn.disabled = true;
-      removeBtn.disabled = true;
-      updateStatus(AppState.MODEL_LOADED, 'Escena reiniciada');
     }
 
-    function placePrinter() {
-      if (!printer || !reticle.visible || printerPlaced) return;
+    // Solicitar sesión con Image Tracking
+    async function requestImageTrackingSession() {
+      try {
+        updateStatus('Solicitando sesión AR...');
+        
+        const session = await navigator.xr.requestSession('immersive-ar', {
+          requiredFeatures: ['image-tracking'],
+          trackedImages: [markerConfig]
+        });
 
-      printer.visible = true;
-      printer.position.setFromMatrixPosition(reticle.matrix);
-      
-      // Ajustar rotación para que quede plano en la superficie
-      const matrix = new THREE.Matrix4().copy(reticle.matrix);
-      printer.quaternion.setFromRotationMatrix(matrix);
-      
-      printerPlaced = true;
-      placeBtn.disabled = true;
-      removeBtn.disabled = false;
-      
-      updateStatus(AppState.AR_SESSION_ACTIVE, 'Impresora colocada');
+        setupSession(session);
+        currentSession = session;
+        
+      } catch (error) {
+        console.error('Error solicitando sesión:', error);
+        updateStatus(`Error: ${error.message}`);
+      }
     }
 
-    function removePrinter() {
-      if (printer && printerPlaced) {
+    function setupSession(session) {
+      updateStatus('Sesión AR iniciada');
+      instructionsEl.classList.remove('hidden');
+      
+      // Configurar referencia espacial
+      session.requestReferenceSpace('local').then((refSpace) => {
+        xrRefSpace = refSpace;
+        
+        // Configurar Image Tracking
+        session.requestImageTrackingSource({ images: [markerConfig] }).then((source) => {
+          imageTrackingSource = source;
+          updateStatus('Image Tracking configurado. Apunta al QR.');
+        });
+      });
+
+      // Iniciar loop de renderizado
+      session.requestAnimationFrame(onXRFrame);
+
+      // Evento de fin de sesión
+      session.addEventListener('end', () => {
+        imageTrackingSource = null;
+        currentSession = null;
         printer.visible = false;
-        printerPlaced = false;
-        placeBtn.disabled = !reticle.visible;
-        removeBtn.disabled = true;
-        updateStatus(AppState.AR_SESSION_ACTIVE, 'Impresora removida');
+        updateStatus('Sesión finalizada');
+        instructionsEl.classList.add('hidden');
+      });
+    }
+
+    // Loop de renderizado principal
+    function onXRFrame(time, frame) {
+      if (frame && imageTrackingSource) {
+        const session = frame.session;
+        
+        // Obtener resultados de Image Tracking
+        const imageTrackingResults = frame.getImageTrackingResults(imageTrackingSource);
+        
+        if (imageTrackingResults.length > 0) {
+          const result = imageTrackingResults[0];
+          
+          // Verificar si la imagen está siendo rastreada
+          if (result.trackingState === 'tracked') {
+            const pose = result.getPose(xrRefSpace);
+            
+            if (pose && printer) {
+              // Posicionar la impresora sobre el QR
+              printer.visible = true;
+              printer.position.setFromMatrixPosition(pose.transform.matrix);
+              
+              // Ajustar rotación para que quede plano sobre el QR
+              const matrix = new THREE.Matrix4().copy(pose.transform.matrix);
+              printer.quaternion.setFromRotationMatrix(matrix);
+              
+              updateStatus('QR detectado ✓ Impresora colocada');
+            }
+          } else {
+            // Imagen perdida o no detectada
+            printer.visible = false;
+            updateStatus('Buscando QR... Mueve la cámara lentamente');
+          }
+        } else {
+          // No se detectó el QR
+          printer.visible = false;
+          updateStatus('Apunta al código QR impreso');
+        }
+        
+        // Solicitar siguiente frame
+        session.requestAnimationFrame(onXRFrame);
+      }
+
+      // Renderizar escena
+      if (renderer) {
+        renderer.render(scene, camera);
       }
     }
 
     function onResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    // Loop de renderizado principal
-    function render(time, frame) {
-      if (frame) {
-        const session = renderer.xr.getSession();
-        
-        if (session && session !== currentSession) {
-          setupSession(session);
-          currentSession = session;
-        }
-
-        if (session && hitTestSource) {
-          const referenceSpace = renderer.xr.getReferenceSpace();
-          const hitTestResults = frame.getHitTestResults(hitTestSource);
-          
-          if (hitTestResults.length > 0) {
-            const hit = hitTestResults[0];
-            const pose = hit.getPose(referenceSpace);
-            
-            if (pose) {
-              reticle.visible = true;
-              reticle.matrix.fromArray(pose.transform.matrix);
-              
-              // Solo habilitar colocación si no hay impresora colocada
-              if (!printerPlaced) {
-                placeBtn.disabled = false;
-              }
-              
-              if (!printerPlaced) {
-                updateStatus(AppState.AR_SESSION_ACTIVE, 'Superficie detectada - Toca para colocar');
-              }
-            }
-          } else {
-            reticle.visible = false;
-            placeBtn.disabled = true;
-            updateStatus(AppState.AR_SESSION_ACTIVE, 'Buscando superficie...');
-          }
-        }
+      if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
       }
-
-      // Animación del reticle
-      if (reticle.visible) {
-        const scale = 1 + Math.sin(time * 0.003) * 0.1;
-        reticleRing.scale.set(scale, scale, scale);
-        reticleDot.scale.set(scale, scale, scale);
-      }
-
-      renderer.render(scene, camera);
     }
 
-    function setupSession(session) {
-      updateStatus(AppState.AR_SESSION_ACTIVE);
-      
-      // Configurar hit-test
-      session.requestReferenceSpace('viewer').then((viewerSpace) => {
-        session.requestHitTestSource({ space: viewerSpace }).then((source) => {
-          hitTestSource = source;
-          hitTestSourceRequested = true;
-        }).catch(console.error);
-      }).catch(console.error);
-
-      // Evento de fin de sesión
-      session.addEventListener('end', () => {
-        hitTestSourceRequested = false;
-        hitTestSource = null;
-        currentSession = null;
-        reticle.visible = false;
-        placeBtn.disabled = true;
-        removeBtn.disabled = true;
-        resetBtn.disabled = false;
-        updateStatus(AppState.READY, 'Sesión AR finalizada');
-        instructions.classList.add('hidden');
-      });
-
-      // Evento de selección (tap)
-      session.addEventListener('select', () => {
-        if (reticle.visible && !printerPlaced) {
-          placePrinter();
-        }
-      });
-    }
-
-    // Iniciar la aplicación
+    // Iniciar aplicación
     init();
   </script>
 </body>
