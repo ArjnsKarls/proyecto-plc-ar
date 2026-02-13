@@ -1,66 +1,152 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="es">
 <head>
-    <title>RA con Impresora Canon</title>
-    <style>
-        body { margin: 0; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AR - Canon Printer (WebXR)</title>
+  <style>
+    html, body { margin:0; height:100%; overflow:hidden; background:#000; }
+    #ui{
+      position:fixed; left:12px; top:12px; z-index:10;
+      display:flex; gap:8px; align-items:center;
+      font-family:system-ui, sans-serif;
+    }
+    button{ padding:10px 12px; border:0; border-radius:10px; font-weight:700; }
+    #msg{ color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6); }
+  </style>
 </head>
 <body>
-    <h1>Impresora Canon en RA</h1>
-    <script src="https://webxr.io/libraries/three/build/three.min.js"></script>
-<script src="https://webxr.io/libraries/webxr-polyfill/build/webxr-polyfill.min.js"></script>
-    <script>
-        // Variables
-        let scene, camera, renderer;
-        let model;
+  <div id="ui">
+    <button id="place" disabled>Colocar impresora</button>
+    <span id="msg"></span>
+  </div>
 
-        // Carga el modelo
-        function loadModel(glbFile) {
-            return new Promise((resolve, reject) => {
-                const loader = new THREE.GLTFLoader();
-                loader.load(glbFile, function (gltf) {
-                    scene.add(gltf.scene);
-                    model = gltf.scene;
-                    resolve();
-                }, undefined, reject);
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    import { ARButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+
+    let scene, camera, renderer;
+    let hitTestSource = null;
+    let hitTestSourceRequested = false;
+
+    const placeBtn = document.getElementById('place');
+    const msg = document.getElementById('msg');
+
+    // Reticle (dónde se puede colocar)
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.08, 0.10, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+    );
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+
+    let printer = null;
+
+    init();
+
+    function init() {
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+      renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.xr.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+      scene.add(reticle);
+
+      // Cargar modelo
+      const loader = new GLTFLoader();
+      loader.load('./the_canon_printer.glb', (gltf) => {
+        printer = gltf.scene;
+        printer.visible = false;
+
+        // Ajusta escala si se ve enorme o pequeña
+        printer.scale.set(0.4, 0.4, 0.4);
+
+        scene.add(printer);
+        msg.textContent = 'Modelo listo. Pulsa "Enter AR".';
+      }, undefined, (e) => {
+        console.error(e);
+        msg.textContent = 'Error cargando the_canon_printer.glb';
+      });
+
+      // Botón AR (crea “Enter AR”)
+      document.body.appendChild(ARButton.createButton(renderer, {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.body }
+      }));
+
+      placeBtn.addEventListener('click', () => {
+        if (!printer || !reticle.visible) return;
+
+        printer.visible = true;
+        printer.position.setFromMatrixPosition(reticle.matrix);
+
+        const m = new THREE.Matrix4().copy(reticle.matrix);
+        printer.quaternion.setFromRotationMatrix(m);
+
+        msg.textContent = 'Impresora colocada.';
+      });
+
+      window.addEventListener('resize', onResize);
+      renderer.setAnimationLoop(render);
+
+      msg.textContent = 'Cargando…';
+    }
+
+    function render(t, frame) {
+      if (frame) {
+        const session = renderer.xr.getSession();
+        const referenceSpace = renderer.xr.getReferenceSpace();
+
+        if (!hitTestSourceRequested) {
+          session.requestReferenceSpace('viewer').then((viewerSpace) => {
+            session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+              hitTestSource = source;
             });
+          });
+
+          session.addEventListener('end', () => {
+            hitTestSourceRequested = false;
+            hitTestSource = null;
+            reticle.visible = false;
+            placeBtn.disabled = true;
+            msg.textContent = 'Sesión terminada.';
+          });
+
+          hitTestSourceRequested = true;
         }
 
-        // Inicialización
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-
-            // Carga el modelo
-            loadModel("the_canon_printer.glb").then(() => {
-                // Posiciona el modelo
-                model.position.y = - 0.5; // Ajusta la altura
-            });
-
-            // Evento de redimensionamiento
-            window.addEventListener('resize', onResize);
+        if (hitTestSource) {
+          const hitTestResults = frame.getHitTestResults(hitTestSource);
+          if (hitTestResults.length) {
+            const hit = hitTestResults[0];
+            const pose = hit.getPose(referenceSpace);
+            reticle.visible = true;
+            reticle.matrix.fromArray(pose.transform.matrix);
+            placeBtn.disabled = false;
+            if (printer && !printer.visible) msg.textContent = 'Apunta al piso/mesa y pulsa "Colocar impresora".';
+          } else {
+            reticle.visible = false;
+            placeBtn.disabled = true;
+          }
         }
+      }
 
-        // Redimensionamiento
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+      renderer.render(scene, camera);
+    }
 
-        // Animación
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        // Inicio
-        init();
-        animate();
-    </script>
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  </script>
 </body>
 </html>
