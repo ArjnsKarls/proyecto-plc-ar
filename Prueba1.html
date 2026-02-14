@@ -1,314 +1,56 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AR - Impresora Canon con Image Tracking</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body {
-      margin: 0;
-      height: 100vh;
-      overflow: hidden;
-      background: #000;
-      font-family: system-ui, sans-serif;
-    }
+<html>
+<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.6.0/dist/aframe-master.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
-    #ui {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 100;
-      color: white;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 15px;
-      border-radius: 10px;
-      max-width: 300px;
-    }
+<style>
+  .arjs-loader {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 
-    #instructions {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 24px;
-      text-align: center;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+  .arjs-loader div {
+    text-align: center;
+    font-size: 1.25em;
+    color: white;
+  }
+</style>
 
-    .hidden { display: none; }
-  </style>
-</head>
-<body>
-  <div id="ui">
-    <h3>Impresora Canon AR</h3>
-    <p id="status">Cargando...</p>
-    <p id="device-info"></p>
+<body style="margin : 0px; overflow: hidden;">
+  <!-- minimal loader shown until image descriptors are loaded -->
+  <div class="arjs-loader">
+    <div>Loading, please wait...</div>
   </div>
-
-  <div id="instructions" class="hidden">
-    Apunta tu cámara al código QR impreso para ver la impresora
-  </div>
-
-  <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-    import { ARButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js';
-    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-
-    // Variables globales
-    let scene, camera, renderer;
-    let imageTrackingSource = null;
-    let printer = null;
-    let currentSession = null;
-
-    // Elementos DOM
-    const statusEl = document.getElementById('status');
-    const deviceInfoEl = document.getElementById('device-info');
-    const instructionsEl = document.getElementById('instructions');
-
-    // Imagen del QR que será reconocida
-    const qrMarkerImage = new Image();
-    qrMarkerImage.src = './qr-marker.png'; // Tu imagen QR específica
-
-    // Configuración del marcador
-    const markerConfig = {
-      image: qrMarkerImage,
-      widthInMeters: 0.1, // Tamaño real del QR impreso (10cm)
-      physicalWidth: 0.1
-    };
-
-    // Inicialización
-    async function init() {
-      try {
-        // Verificar soporte de WebXR
-        if (!navigator.xr) {
-          throw new Error('WebXR no está soportado en este navegador');
-        }
-
-        // Verificar soporte de Image Tracking
-        const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
-        if (!isSupported) {
-          throw new Error('AR no está soportado en este dispositivo');
-        }
-
-        updateStatus('Verificando Image Tracking...');
-
-        // Crear escena
-        scene = new THREE.Scene();
-
-        // Crear cámara
-        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-
-        // Crear renderer
-        renderer = new THREE.WebGLRenderer({ 
-          antialias: true, 
-          alpha: true 
-        });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.xr.enabled = true;
-        document.body.appendChild(renderer.domElement);
-
-        // Iluminación
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(5, 5, 5);
-        scene.add(directionalLight);
-
-        // Cargar modelo de impresora
-        updateStatus('Cargando modelo 3D...');
-        
-        const loader = new GLTFLoader();
-        loader.load(
-          './the_canon_printer.glb',
-          (gltf) => {
-            printer = gltf.scene;
-            
-            // Optimizar modelo
-            printer.traverse((child) => {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
-
-            // Ajustar escala
-            printer.scale.set(0.3, 0.3, 0.3);
-            printer.visible = false;
-            
-            scene.add(printer);
-            updateStatus('Modelo cargado. Listo para AR.');
-            
-            // Configurar botón AR
-            setupARButton();
-          },
-          undefined,
-          (error) => {
-            console.error('Error cargando modelo:', error);
-            updateStatus('Error cargando el modelo. Usando cubo de prueba.');
-            
-            // Fallback: cubo simple
-            printer = new THREE.Mesh(
-              new THREE.BoxGeometry(0.3, 0.3, 0.3),
-              new THREE.MeshStandardMaterial({ color: 0x3498db })
-            );
-            printer.visible = false;
-            scene.add(printer);
-            updateStatus('Usando modelo de prueba. Listo para AR.');
-            setupARButton();
-          }
-        );
-
-        // Eventos de ventana
-        window.addEventListener('resize', onResize);
-
-      } catch (error) {
-        console.error('Error en inicialización:', error);
-        updateStatus(`Error: ${error.message}`);
-      }
-    }
-
-    function setupARButton() {
-      const arButton = ARButton.createButton(renderer, {
-        requiredFeatures: ['image-tracking'],
-        optionalFeatures: ['dom-overlay'],
-        domOverlay: { root: document.body }
-      });
-      
-      arButton.textContent = 'Iniciar AR con QR';
-      arButton.style.position = 'fixed';
-      arButton.style.bottom = '20px';
-      arButton.style.right = '20px';
-      arButton.style.zIndex = '100';
-      document.body.appendChild(arButton);
-    }
-
-    function updateStatus(message) {
-      statusEl.textContent = message;
-      
-      // Detectar dispositivo
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      const isAndroid = /Android/.test(navigator.userAgent);
-      
-      if (isIOS) {
-        deviceInfoEl.textContent = 'iOS: Soporte nativo completo ✅';
-      } else if (isAndroid) {
-        deviceInfoEl.textContent = 'Android: Requiere flag en Chrome';
-        deviceInfoEl.innerHTML += '<br><small>chrome://flags/#webxr-incubations</small>';
-      }
-    }
-
-    // Solicitar sesión con Image Tracking
-    async function requestImageTrackingSession() {
-      try {
-        updateStatus('Solicitando sesión AR...');
-        
-        const session = await navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['image-tracking'],
-          trackedImages: [markerConfig]
-        });
-
-        setupSession(session);
-        currentSession = session;
-        
-      } catch (error) {
-        console.error('Error solicitando sesión:', error);
-        updateStatus(`Error: ${error.message}`);
-      }
-    }
-
-    function setupSession(session) {
-      updateStatus('Sesión AR iniciada');
-      instructionsEl.classList.remove('hidden');
-      
-      // Configurar referencia espacial
-      session.requestReferenceSpace('local').then((refSpace) => {
-        xrRefSpace = refSpace;
-        
-        // Configurar Image Tracking
-        session.requestImageTrackingSource({ images: [markerConfig] }).then((source) => {
-          imageTrackingSource = source;
-          updateStatus('Image Tracking configurado. Apunta al QR.');
-        });
-      });
-
-      // Iniciar loop de renderizado
-      session.requestAnimationFrame(onXRFrame);
-
-      // Evento de fin de sesión
-      session.addEventListener('end', () => {
-        imageTrackingSource = null;
-        currentSession = null;
-        printer.visible = false;
-        updateStatus('Sesión finalizada');
-        instructionsEl.classList.add('hidden');
-      });
-    }
-
-    // Loop de renderizado principal
-    function onXRFrame(time, frame) {
-      if (frame && imageTrackingSource) {
-        const session = frame.session;
-        
-        // Obtener resultados de Image Tracking
-        const imageTrackingResults = frame.getImageTrackingResults(imageTrackingSource);
-        
-        if (imageTrackingResults.length > 0) {
-          const result = imageTrackingResults[0];
-          
-          // Verificar si la imagen está siendo rastreada
-          if (result.trackingState === 'tracked') {
-            const pose = result.getPose(xrRefSpace);
-            
-            if (pose && printer) {
-              // Posicionar la impresora sobre el QR
-              printer.visible = true;
-              printer.position.setFromMatrixPosition(pose.transform.matrix);
-              
-              // Ajustar rotación para que quede plano sobre el QR
-              const matrix = new THREE.Matrix4().copy(pose.transform.matrix);
-              printer.quaternion.setFromRotationMatrix(matrix);
-              
-              updateStatus('QR detectado ✓ Impresora colocada');
-            }
-          } else {
-            // Imagen perdida o no detectada
-            printer.visible = false;
-            updateStatus('Buscando QR... Mueve la cámara lentamente');
-          }
-        } else {
-          // No se detectó el QR
-          printer.visible = false;
-          updateStatus('Apunta al código QR impreso');
-        }
-        
-        // Solicitar siguiente frame
-        session.requestAnimationFrame(onXRFrame);
-      }
-
-      // Renderizar escena
-      if (renderer) {
-        renderer.render(scene, camera);
-      }
-    }
-
-    function onResize() {
-      if (camera && renderer) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      }
-    }
-
-    // Iniciar aplicación
-    init();
-  </script>
+  <a-scene
+    vr-mode-ui="enabled: false;"
+    renderer="logarithmicDepthBuffer: true; precision: medium;"
+    embedded
+    arjs="trackingMethod: best; sourceType: webcam;debugUIEnabled: false;"
+  >
+    <!-- we use cors proxy to avoid cross-origin problems ATTENTION! you need to set up your server -->
+    <a-nft
+      type="nft"
+      url="your-server/https://raw.githack.com/AR-js-org/AR.js/master/aframe/examples/image-tracking/nft/trex/trex-image/trex"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance=".01"
+      smoothThreshold="5"
+    >
+      <a-entity
+        gltf-model="your-server/https://raw.githack.com/AR-js-org/AR.js/master/aframe/examples/image-tracking/nft/trex/scene.gltf"
+        scale="5 5 5"
+        position="150 300 -100"
+      >
+      </a-entity>
+    </a-nft>
+    <a-entity camera></a-entity>
+  </a-scene>
 </body>
 </html>
